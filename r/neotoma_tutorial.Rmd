@@ -24,7 +24,7 @@ If you are working on your own machine, you must first install these packages.
 ## Set Up
 ```{r results='hide', warning=FALSE,message = F}
 # If you are working on your own machine, you must first install these packages.
-# install.packages(c("ggplot", "ggmap", "tidyverse", "skimr", "taxize", "neotoma","purrr","WikipediR"))
+# install.packages(c("ggplot", "ggmap", "tidyverse", "skimr", "taxize", "neotoma", "purrr", "WikipediR", tidyr))
 
 library(ggplot2)
 library(ggmap)
@@ -34,6 +34,7 @@ library(taxize)
 library(neotoma)
 library(purrr)
 library(WikipediR)
+library(tidyr)
 ```
 
 ## Exploring with a short example
@@ -419,7 +420,7 @@ Looks good!
 
 ## Apply to larger dataset - extinct species
 
-While wondering around the Neotoma database I found out that if you use `neotoma::get_table` on the "taxa" dataset, you get a column that tells you if the animal is extinct or not. What is more interesting to extinct species? Nothing. Expecially in North America! There are Mammoths, huge armidillos, Saber Tooth Tigers, Giant Sloths and more!  
+While wondering around the Neotoma database I found out that if you use `neotoma::get_table` on the "taxa" dataset, you get a column that tells you if the animal is extinct or not. What is more interesting than extinct species? Nothing. Expecially in North America! There are Mammoths, huge armidillos, Saber Tooth Tigers, Giant Sloths and more!  
 
 Let's try to get the taxonomic classifications of all the extinct animals.
 
@@ -473,6 +474,7 @@ extinct_mammals$taxon.name <- trimws(extinct_mammals$taxon.name)
 ## and also requires manual interaction
 ## you can download data set below
 ## Manual selection key: 1, 0, 2, 0, 2, 1 
+## [TODO] I needed one more number for the manual selection. I put NA and then get 26 not classified below.
 extinct_tol <- classification(unique(extinct_mammals$taxon.name), db = 'tol') 
 
 ## You end up with a list of dataframes. 
@@ -487,38 +489,42 @@ extinct_tol <- extinct_tol[!is.na(extinct_tol)]
 
 ### Make data frame to merge with 
 
-[TODO] THis is an old way of making a dataframe.  Is there a more efficient way? This is super unreadable and confusing code. Maybe skip this part and upload the dataframe after?
+[TODO] Switch from read/write to using this if you think this approach is ok.
 
 ```{r eval=FALSE}
-extinct_tol_list <- list()
-for (i in 1:length(names(extinct_tol))) {
-  taxon.name <- names(extinct_tol)[i]
+helper <- function(x,y){
 
-  x <- extinct_tol[[i]] %>% 
-    filter(rank %in% c("order", "family", "genus")) %>%
-    select(-id)
+  xNice = x %>% filter(rank %in% c("order", "family", "genus")) %>%
+    select(-id) %>% complete(rank = c("order","family","genus"))
   
-  if(dim(x)[1] != 3) { #probably need a better check here.
-    missing <- setdiff(c("order", "family", "genus"), x$rank)
-    add <- data.frame(name = rep(NA, length(missing)), rank=missing)
-    x <- rbind(x, add)
-  }
-  
-  y <- c(taxon.name, as.character(x$name))
-  names(y) <- c("taxon.name", "order", "family", "genus")
-  extinct_tol_list[[i]] <- y
-
+  y <- c(y, as.character(xNice$name))
+  return(y)
 }
 
-
+## see why I'm removing 74 and 200 below
+## [TODO] Check that these numbers stay the same after we deal with the discrepancy in manual selection key
+extinct_tol_list = map2(extinct_tol[-c(74,200)], names(extinct_tol)[-c(74,200)],~helper(.x,.y)) 
 tol_classification <- as.data.frame(do.call(rbind, extinct_tol_list))
-tol_classification[,5] <- NULL #whoops repeated column
+names(tol_classification)= c("order", "family", "genus", "taxon.name")
+
 
 extinct_merged <- merge(extinct_mammals, tol_classification, by = "taxon.name", all.x = TRUE)
 dim(extinct_merged)
 
 ## Write out
 ## write.csv(extinct_merged, "../data/part2_extinct_merged_27March2018_caryn.csv", row.names = FALSE)
+```
+
+```{r}
+which(unlist(lapply(mapply(helper,extinct_tol,names(extinct_tol),SIMPLIFY = F) , length))!=4)
+
+extinct_tol[[74]] %>% filter(rank %in% c("order", "family", "genus")) %>%
+    select(-id) %>% complete(rank = c("order","family","genus"))
+## double family
+
+extinct_tol[[200]] %>% filter(rank %in% c("order", "family", "genus")) %>%
+    select(-id) %>% complete(rank = c("order","family","genus"))
+## double order
 ```
 
 ## Visualizing extinct animals
