@@ -491,7 +491,7 @@ extinct_tol <- extinct_tol[!is.na(extinct_tol)]
 
 [TODO] Switch from read/write to using this if you think this approach is ok.
 
-```{r eval=FALSE}
+```{r, eval=FALSE}
 helper <- function(x,y){
 
   xNice = x %>% filter(rank %in% c("order", "family", "genus")) %>%
@@ -515,7 +515,8 @@ dim(extinct_merged)
 ## write.csv(extinct_merged, "../data/part2_extinct_merged_27March2018_caryn.csv", row.names = FALSE)
 ```
 
-```{r}
+```{r, eval=FALSE}
+
 which(unlist(lapply(mapply(helper,extinct_tol,names(extinct_tol),SIMPLIFY = F) , length))!=4)
 
 extinct_tol[[74]] %>% filter(rank %in% c("order", "family", "genus")) %>%
@@ -596,7 +597,8 @@ We see some clustering in Michigan, let's break that down a little bit to see wh
 
 **Note**: [*Proboscidea*](https://en.wikipedia.org/wiki/Proboscidea) is the animal order in which elephants belong. Interestingly, the only *Proboscidea* two species left on earth are in  [Elephantidae](https://en.wikipedia.org/wiki/Elephantidae) 😭🐘 
 
-```{r}
+```{r, message = F, warnings = F}
+
 extinct_merged %>%
   filter(order %in% orders_to_keep) %>%
   filter(order == "Proboscidea") %>%
@@ -653,6 +655,12 @@ I wanted to see if I could make sense of the habitat of these species or climate
 As we explore more databases we hope to gain a better understanding of the data available and how they can be combined to provide insights into our natural world. 
 
 Stay tuned for more exploration!
+
+## Activity
+
+1. Brainstorm question(s) that you could answer using this dataset. 
+2. How would you approach you question(s)? 
+3. If you pursue your idea further, consider contributing to the [Cabinet of Curiosity](https://github.com/cabinetofcuriosity).
 
 ## Resources
 
