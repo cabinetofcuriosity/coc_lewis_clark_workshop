@@ -77,15 +77,27 @@ ggplot() +
 
 1. What does the `*` mean in this code?
 2. Find your favorite animal or group of animals using the `get_dataset` function.
-3. Visualize something. [TODO]
+3. Visualize something. 
 
 ```{r}
 ## use this helper function to get a dataframe that makes plotting easier
+## generalized from code above
 helperFunction <- function(data){
   
+  long <- unlist(lapply(data, function(x) {
+  x$site.data$long
+}))
+lat <- unlist(lapply(data, function(x) {
+  x$site.data$lat
+}))
+
+toPlot <- cbind.data.frame(long = long, lat = lat)
+  
+  return(toPlot)
 }
 
 smilodonNice = helperFunction(smilodon)
+head(smilodonNice)
 ```
 
 ## Exploring with large example
