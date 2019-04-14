@@ -75,11 +75,11 @@ ggplot() +
    ggtitle("Geographic Distribution of Smilodon Samples") 
 ```
 
-## Activity (5 min)
+## Activity 
 
 1. What does the `*` mean in this code?
 2. Find your favorite animal or group of animals using the `get_dataset` function.
-3. Visualize something. 
+3. Visualize the result of your `get_dataset` call. 
 
 ```{r}
 ## use this helper function to get a dataframe that makes plotting easier
@@ -292,6 +292,13 @@ ggplot() +
 
 Ooooo Sabertooth Tigers seem to like warmer climates, that is, if North American climate during the times of these samples was anything like today's climate, which it wasn't really...
 
+## Activity
+
+1. Make a map of the group you chose in the first activity. 
+2. Experiment with different inputs to `scale_color_brewer`, `theme`, and `guides` to customize your map.
+
+
+
 Now I can only go so far in exploring the data this way. The groupings of taxon is limited to species or genus, but what if I really want to see the distribution of higher order taxonomic groups. 
 This is where taxize comes in.
 
@@ -336,7 +343,7 @@ whole_mammoth_test <- classification(unique(mammoth_test$taxon.name), db = 'tol'
 as.data.frame(is.na(whole_mammoth_test))
 ```
 
-In order to get the most out of `taxize` we have to clean up the `taxon.names` so that Neotoma and Tree of Life work friendlier together. I grabbed a regex I saw from a Github gist Simon Goring  wrote [gist](https://gist.github.com/SimonGoring/24fb1228204f768f3f0020f37060db18) to help with the issue of cleaning up taxon name data.
+In order to get the most out of `taxize` we have to clean up the `taxon.names` so that Neotoma and Tree of Life work friendlier together. I grabbed a regex I saw from a Github gist Simon Goring wrote [gist](https://gist.github.com/SimonGoring/24fb1228204f768f3f0020f37060db18) to help with the issue of cleaning up taxon name data.
 
 ```{r}
 ## From Simon 
@@ -349,7 +356,7 @@ table(mammoth_test$taxon.name) # use table() to both view the new and improved M
 
 After cleaning `taxon.name` we get the taxonomic classifications for each species in the sample set. 
 
-```{r}
+```{r,message=F}
 clean_mammoth_test <- classification(unique(mammoth_test$taxon.name), db = 'tol') 
 
 ## Yay! Much better. No NAs.
@@ -397,7 +404,7 @@ merged <- merge(mammoth_test, tol_classif, by = "taxon.name")
 
 ## Lets take a peak of the dataset
 merged %>%
-  select(taxon.name, order, family, genus, lat, long, ) %>%
+  select(taxon.name, order, family, genus, lat, long ) %>%
   head()
 ```
 
@@ -405,7 +412,10 @@ Looks good!
 
 **Note**: You can really do this with any subset of the Neotoma mammals dataset, but if you do it with the whole thing, it takes a long time and you need a tad more cleanup. 
 
-[TODO] At this point there really haven't been any activities for awhile, we have to have some sort of break. 
+## Activity
+
+1. Add taxonomic classification to the dataset you mapped in the previous activity.
+2. There is a lot of processing involved. What questions do you have about the process? Look at the documentation for functions that you aren't familiar with.
 
 ## Apply to larger dataset - extinct species
 
@@ -632,7 +642,7 @@ The majority of the taxa is made up of Mastodon samples [*Mammut americanum*](ht
 
 ## Incorporation of More Data
 
-I wanted to see if I could make sense of the habitat of these species or climate during the Pliocene to map onto the plot, but unfortunatley I could not find mappable data. I wish I had [this papers](https://www.researchgate.net/publication/37456896_Modelling_Middle_Pliocene_warm_climates_of_the_USA) data. This is a question I had many times during these this analysis.  Does anyone know where we can get predicted ancient global temperature? 
+I wanted to see if I could make sense of the habitat of these species or climate during the Pliocene to map onto the plot, but unfortunatley I could not find mappable data. I wish I had [this paper's](https://www.researchgate.net/publication/37456896_Modelling_Middle_Pliocene_warm_climates_of_the_USA) data. This is a question I had many times during these this analysis.  Does anyone know where we can get predicted ancient global temperature? 
 
 As we explore more databases we hope to gain a better understanding of the data available and how they can be combined to provide insights into our natural world. 
 
