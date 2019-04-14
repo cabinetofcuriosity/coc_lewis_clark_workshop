@@ -1,5 +1,5 @@
 ---
-title: 'Exploring Neotoma: Part 2'
+title: 'Exploring Neotoma'
 author: "Ciera Martinez"
 date: "2018-03-20 00:00:00 +0300"
 output:
@@ -24,7 +24,7 @@ If you are working on your own machine, you must first install these packages.
 ## Set Up
 ```{r results='hide', warning=FALSE}
 # If you are working on your own machine, you must first install these packages.
-# install.packages(c("ggplot", "ggmap", "tidyverse", "skimr", "taxize", "neotoma"))
+# install.packages(c("ggplot", "ggmap", "tidyverse", "skimr", "taxize", "neotoma","purrr"))
 
 library(ggplot2)
 library(ggmap)
@@ -32,6 +32,7 @@ library(tidyverse)
 library(skimr)
 library(taxize)
 library(neotoma)
+library(purrr)
 ```
 
 ## Exploring with a short example
@@ -47,7 +48,29 @@ smilodon
 
 
 ```{r}
-# Maybe put a quick visualization here? 
+## want to be tidy, but I can't figure out why this doesn't work
+#toPlot = map(smilodon, ~.x$site.data) %>% map_df( `[`, c("long","lat"))
+
+long <- unlist(lapply(smilodon, function(x) {
+  x$site.data$long
+}))
+lat <- unlist(lapply(smilodon, function(x) {
+  x$site.data$lat
+}))
+
+toPlot <- cbind.data.frame(long = long, lat = lat)
+
+usa <- map_data("state") 
+
+ggplot() + 
+  geom_polygon(data = usa, 
+               fill = "grey38", 
+               aes(x = long, y = lat, group = group)) + 
+  coord_fixed(1.3) +
+  geom_point(data = toPlot, 
+             aes(x = long, 
+                 y = lat)) +
+   ggtitle("Geographic Distribution of Smilodon Samples") 
 ```
 
 ## Activity (5 min)
@@ -55,6 +78,15 @@ smilodon
 1. What does the `*` mean in this code?
 2. Find your favorite animal or group of animals using the `get_dataset` function.
 3. Visualize something. [TODO]
+
+```{r}
+## use this helper function to get a dataframe that makes plotting easier
+helperFunction <- function(data){
+  
+}
+
+smilodonNice = helperFunction(smilodon)
+```
 
 ## Exploring with large example
 
