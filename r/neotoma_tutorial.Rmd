@@ -24,7 +24,7 @@ If you are working on your own machine, you must first install these packages.
 ## Set Up
 ```{r results='hide', warning=FALSE,message = F}
 # If you are working on your own machine, you must first install these packages.
-# install.packages(c("ggplot", "ggmap", "tidyverse", "skimr", "taxize", "neotoma", "purrr", "WikipediR", tidyr))
+# install.packages(c("ggplot", "ggmap", "tidyverse", "skimr", "taxize", "neotoma", "WikipediR"))
 
 library(ggplot2)
 library(ggmap)
@@ -32,9 +32,7 @@ library(tidyverse)
 library(skimr)
 library(taxize)
 library(neotoma)
-library(purrr)
 library(WikipediR)
-library(tidyr)
 ```
 
 ## Exploring with a short example
