@@ -22,9 +22,9 @@ Note: If you are an SQL wizard, you are in luck, this database is extensive and 
 If you are working on your own machine, you must first install these packages.
 
 ## Set Up
-```{r results='hide', warning=FALSE}
+```{r results='hide', warning=FALSE,message = F}
 # If you are working on your own machine, you must first install these packages.
-# install.packages(c("ggplot", "ggmap", "tidyverse", "skimr", "taxize", "neotoma","purrr"))
+# install.packages(c("ggplot", "ggmap", "tidyverse", "skimr", "taxize", "neotoma","purrr","WikipediR"))
 
 library(ggplot2)
 library(ggmap)
@@ -33,6 +33,7 @@ library(skimr)
 library(taxize)
 library(neotoma)
 library(purrr)
+library(WikipediR)
 ```
 
 ## Exploring with a short example
@@ -43,13 +44,14 @@ For instance, if you are interested in a particular species, age, altitude, ect.
 
 ```{r}
 smilodon <- get_dataset(taxonname = 'Smilodon*') 
-smilodon
+head(smilodon)
 ```
 
 
-```{r}
-## want to be tidy, but I can't figure out why this doesn't work
-#toPlot = map(smilodon, ~.x$site.data) %>% map_df( `[`, c("long","lat"))
+```{r,message=F}
+## BONUS CHALLENGE: I want to be tidy and use purrr, but I can't figure out why the following doesn't work:
+## toPlot = map(smilodon, ~.x$site.data) %>% map_df( `[`, c("long","lat"))
+## Can you use `map` style function calls to get a dataframe toPlot that matches the one below?
 
 long <- unlist(lapply(smilodon, function(x) {
   x$site.data$long
@@ -162,9 +164,44 @@ What are all these species?! With the exception of Bison bison (which is Bison o
 
 ## Activity
 
-1. Google some of these taxa to get an idea of what animals are most represented in this data?
+1. Google some of these taxa to get an idea of what animals are most represented in this data.
+
+If you want to be fancy you can access Wikipedia from R. This won't work for every taxon name, but it's worth a try. 
+
+```{r}
+wp_content <- page_content("en", "wikipedia", page_name = mammals$taxon.name[1], as_wikitext = T)
+wp_content$parse$wikitext
+
+# wp_content2 <- page_content("en","wikipedia", page_name = mammals$taxon.name[2],as_wikitext = T) ## page doesn't exist
+
+wp_content3 <- page_content("en", "wikipedia", page_name = mammals$taxon.name[3], as_wikitext = T)
+wp_content3$parse$wikitext
+```
+
+It would be nice if we could do this automatically for every entry in `mammals`. I wasn't able to get this to work. If you are curious why, read on.
+
+```{r,eval = F}
+#https://github.com/Ironholds/WikipediR/issues/25
+
+## I want to be able to do this
+lapply(mammals$taxon.name, function(x) {
+  page_content("en", "wikipedia", page_name = x, as_wikitext = T)
+})
+
+
+## failed attempt to get around the problem
+wiki_wrapper <- function(x) {
+  page_content("en", "wikipedia", page_name = x, as_wikitext = T)
+}
+
+mammals %>% map_df(safely(wiki_wrapper(~ .x$taxon.name), otherwise = NA_real_, quiet = T))
+```
+
+
 2. Does this make sense?  Why or why not?
 3. How many unique species are represented in this data?
+
+
 
 ## Getting to know the data even better to ask even more questions
 
