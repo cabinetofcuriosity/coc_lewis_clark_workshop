@@ -1,0 +1,5 @@
+Type: Compendium
+Package: cranlogs
+Version: 0.1.0
+Depends: assertthat,backports,base64enc,base64url,BH,bindr,bindrcpp,broom,callr,cellranger,cli,clipr,colorspace,cranlogs,crayon,curl,DBI,dbplyr,digest,dplyr,drake,evaluate,fansi,forcats,fs,generics,ggplot2,ggmap,glue,gtable,haven,highr,hms,htmltools,httr,igraph,jsonlite,knitr,labeling,lattice,lazyeval,lubridate,magrittr,markdown,MASS,Matrix,mgcv,mime,modelr,munsell,neotoma,nlme,openssl,packrat,pillar,pkgconfig,plogr,plyr,prettyunits,processx,progress,ps,purrr,R6,RColorBrewer,Rcpp,readr,readxl,rematch,reprex,reshape2,rlang,rmarkdown,rstudioapi,rvest,scales,selectr,skimr,storr,stringi,stringr,taxize,tibble,tidyr,tidyselect,tidyverse,tinytex,utf8,viridisLite,whisker,withr,xfun,xml2,yaml
+Suggests: extrafont, hrbrthemes, Cairo, ggthemes, tictoc
