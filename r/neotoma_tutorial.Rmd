@@ -1,5 +1,5 @@
 ---
-title: 'Exploring Neotoma: Part 2'
+title: 'Exploring Neotoma'
 author: "Ciera Martinez"
 date: "2018-03-20 00:00:00 +0300"
 output:
@@ -22,9 +22,9 @@ Note: If you are an SQL wizard, you are in luck, this database is extensive and 
 If you are working on your own machine, you must first install these packages.
 
 ## Set Up
-```{r results='hide', warning=FALSE}
+```{r results='hide', warning=FALSE,message = F}
 # If you are working on your own machine, you must first install these packages.
-# install.packages(c("ggplot", "ggmap", "tidyverse", "skimr", "taxize", "neotoma"))
+# install.packages(c("ggplot", "ggmap", "tidyverse", "skimr", "taxize", "neotoma", "WikipediR"))
 
 library(ggplot2)
 library(ggmap)
@@ -32,6 +32,7 @@ library(tidyverse)
 library(skimr)
 library(taxize)
 library(neotoma)
+library(WikipediR)
 ```
 
 ## Exploring with a short example
@@ -42,19 +43,63 @@ For instance, if you are interested in a particular species, age, altitude, ect.
 
 ```{r}
 smilodon <- get_dataset(taxonname = 'Smilodon*') 
-smilodon
+head(smilodon)
 ```
 
 
-```{r}
-# Maybe put a quick visualization here? 
+```{r,message=F}
+## BONUS CHALLENGE: I want to be tidy and use purrr, but I can't figure out why the following doesn't work:
+## toPlot = map(smilodon, ~.x$site.data) %>% map_df( `[`, c("long","lat"))
+## Can you use `map` style function calls to get a dataframe toPlot that matches the one below?
+
+long <- unlist(lapply(smilodon, function(x) {
+  x$site.data$long
+}))
+lat <- unlist(lapply(smilodon, function(x) {
+  x$site.data$lat
+}))
+
+toPlot <- cbind.data.frame(long = long, lat = lat)
+
+usa <- map_data("state") 
+
+ggplot() + 
+  geom_polygon(data = usa, 
+               fill = "grey38", 
+               aes(x = long, y = lat, group = group)) + 
+  coord_fixed(1.3) +
+  geom_point(data = toPlot, 
+             aes(x = long, 
+                 y = lat)) +
+   ggtitle("Geographic Distribution of Smilodon Samples") 
 ```
 
-## Activity (5 min)
+## Activity 
 
 1. What does the `*` mean in this code?
 2. Find your favorite animal or group of animals using the `get_dataset` function.
-3. Visualize something. [TODO]
+3. Visualize the result of your `get_dataset` call. 
+
+```{r}
+## use this helper function to get a dataframe that makes plotting easier
+## generalized from code above
+helperFunction <- function(data){
+  
+  long <- unlist(lapply(data, function(x) {
+  x$site.data$long
+}))
+lat <- unlist(lapply(data, function(x) {
+  x$site.data$lat
+}))
+
+toPlot <- cbind.data.frame(long = long, lat = lat)
+  
+  return(toPlot)
+}
+
+smilodonNice = helperFunction(smilodon)
+head(smilodonNice)
+```
 
 ## Exploring with large example
 
@@ -118,9 +163,44 @@ What are all these species?! With the exception of Bison bison (which is Bison o
 
 ## Activity
 
-1. Google some of these taxa to get an idea of what animals are most represented in this data?
+1. Google some of these taxa to get an idea of what animals are most represented in this data.
+
+If you want to be fancy you can access Wikipedia from R. This won't work for every taxon name, but it's worth a try. 
+
+```{r}
+wp_content <- page_content("en", "wikipedia", page_name = mammals$taxon.name[1], as_wikitext = T)
+wp_content$parse$wikitext
+
+# wp_content2 <- page_content("en","wikipedia", page_name = mammals$taxon.name[2],as_wikitext = T) ## page doesn't exist
+
+wp_content3 <- page_content("en", "wikipedia", page_name = mammals$taxon.name[3], as_wikitext = T)
+wp_content3$parse$wikitext
+```
+
+It would be nice if we could do this automatically for every entry in `mammals`. I wasn't able to get this to work. If you are curious why, read on.
+
+```{r,eval = F}
+#https://github.com/Ironholds/WikipediR/issues/25
+
+## I want to be able to do this
+lapply(mammals$taxon.name, function(x) {
+  page_content("en", "wikipedia", page_name = x, as_wikitext = T)
+})
+
+
+## failed attempt to get around the problem
+wiki_wrapper <- function(x) {
+  page_content("en", "wikipedia", page_name = x, as_wikitext = T)
+}
+
+mammals %>% map_df(safely(wiki_wrapper(~ .x$taxon.name), otherwise = NA_real_, quiet = T))
+```
+
+
 2. Does this make sense?  Why or why not?
 3. How many unique species are represented in this data?
+
+
 
 ## Getting to know the data even better to ask even more questions
 
@@ -211,6 +291,13 @@ ggplot() +
 
 Ooooo Sabertooth Tigers seem to like warmer climates, that is, if North American climate during the times of these samples was anything like today's climate, which it wasn't really...
 
+## Activity
+
+1. Make a map of the group you chose in the first activity. 
+2. Experiment with different inputs to `scale_color_brewer`, `theme`, and `guides` to customize your map.
+
+
+
 Now I can only go so far in exploring the data this way. The groupings of taxon is limited to species or genus, but what if I really want to see the distribution of higher order taxonomic groups. 
 This is where taxize comes in.
 
@@ -255,7 +342,7 @@ whole_mammoth_test <- classification(unique(mammoth_test$taxon.name), db = 'tol'
 as.data.frame(is.na(whole_mammoth_test))
 ```
 
-In order to get the most out of `taxize` we have to clean up the `taxon.names` so that Neotoma and Tree of Life work friendlier together. I grabbed a regex I saw from a Github gist Simon Goring  wrote [gist](https://gist.github.com/SimonGoring/24fb1228204f768f3f0020f37060db18) to help with the issue of cleaning up taxon name data.
+In order to get the most out of `taxize` we have to clean up the `taxon.names` so that Neotoma and Tree of Life work friendlier together. I grabbed a regex I saw from a Github gist Simon Goring wrote [gist](https://gist.github.com/SimonGoring/24fb1228204f768f3f0020f37060db18) to help with the issue of cleaning up taxon name data.
 
 ```{r}
 ## From Simon 
@@ -268,7 +355,7 @@ table(mammoth_test$taxon.name) # use table() to both view the new and improved M
 
 After cleaning `taxon.name` we get the taxonomic classifications for each species in the sample set. 
 
-```{r}
+```{r,message=F}
 clean_mammoth_test <- classification(unique(mammoth_test$taxon.name), db = 'tol') 
 
 ## Yay! Much better. No NAs.
@@ -316,7 +403,7 @@ merged <- merge(mammoth_test, tol_classif, by = "taxon.name")
 
 ## Lets take a peak of the dataset
 merged %>%
-  select(taxon.name, order, family, genus, lat, long, ) %>%
+  select(taxon.name, order, family, genus, lat, long ) %>%
   head()
 ```
 
@@ -324,11 +411,14 @@ Looks good!
 
 **Note**: You can really do this with any subset of the Neotoma mammals dataset, but if you do it with the whole thing, it takes a long time and you need a tad more cleanup. 
 
-[TODO] At this point there really haven't been any activities for awhile, we have to have some sort of break. 
+## Activity
+
+1. Add taxonomic classification to the dataset you mapped in the previous activity.
+2. There is a lot of processing involved. What questions do you have about the process? Look at the documentation for functions that you aren't familiar with.
 
 ## Apply to larger dataset - extinct species
 
-While wondering around the Neotoma database I found out that if you use `neotoma::get_table` on the "taxa" dataset, you get a column that tells you if the animal is extinct or not. What is more interesting to extinct species? Nothing. Expecially in North America! There are Mammoths, huge armidillos, Saber Tooth Tigers, Giant Sloths and more!  
+While wondering around the Neotoma database I found out that if you use `neotoma::get_table` on the "taxa" dataset, you get a column that tells you if the animal is extinct or not. What is more interesting than extinct species? Nothing. Expecially in North America! There are Mammoths, huge armidillos, Saber Tooth Tigers, Giant Sloths and more!  
 
 Let's try to get the taxonomic classifications of all the extinct animals.
 
@@ -382,6 +472,7 @@ extinct_mammals$taxon.name <- trimws(extinct_mammals$taxon.name)
 ## and also requires manual interaction
 ## you can download data set below
 ## Manual selection key: 1, 0, 2, 0, 2, 1 
+## [TODO] I needed one more number for the manual selection. I put NA and then get 26 not classified below.
 extinct_tol <- classification(unique(extinct_mammals$taxon.name), db = 'tol') 
 
 ## You end up with a list of dataframes. 
@@ -396,38 +487,43 @@ extinct_tol <- extinct_tol[!is.na(extinct_tol)]
 
 ### Make data frame to merge with 
 
-[TODO] THis is an old way of making a dataframe.  Is there a more efficient way? This is super unreadable and confusing code. Maybe skip this part and upload the dataframe after?
+[TODO] Switch from read/write to using this if you think this approach is ok.
 
-```{r eval=FALSE}
-extinct_tol_list <- list()
-for (i in 1:length(names(extinct_tol))) {
-  taxon.name <- names(extinct_tol)[i]
+```{r, eval=FALSE}
+helper <- function(x,y){
 
-  x <- extinct_tol[[i]] %>% 
-    filter(rank %in% c("order", "family", "genus")) %>%
-    select(-id)
+  xNice = x %>% filter(rank %in% c("order", "family", "genus")) %>%
+    select(-id) %>% complete(rank = c("order","family","genus"))
   
-  if(dim(x)[1] != 3) { #probably need a better check here.
-    missing <- setdiff(c("order", "family", "genus"), x$rank)
-    add <- data.frame(name = rep(NA, length(missing)), rank=missing)
-    x <- rbind(x, add)
-  }
-  
-  y <- c(taxon.name, as.character(x$name))
-  names(y) <- c("taxon.name", "order", "family", "genus")
-  extinct_tol_list[[i]] <- y
-
+  y <- c(y, as.character(xNice$name))
+  return(y)
 }
 
-
+## see why I'm removing 74 and 200 below
+## [TODO] Check that these numbers stay the same after we deal with the discrepancy in manual selection key
+extinct_tol_list = map2(extinct_tol[-c(74,200)], names(extinct_tol)[-c(74,200)],~helper(.x,.y)) 
 tol_classification <- as.data.frame(do.call(rbind, extinct_tol_list))
-tol_classification[,5] <- NULL #whoops repeated column
+names(tol_classification)= c("order", "family", "genus", "taxon.name")
+
 
 extinct_merged <- merge(extinct_mammals, tol_classification, by = "taxon.name", all.x = TRUE)
 dim(extinct_merged)
 
 ## Write out
 ## write.csv(extinct_merged, "../data/part2_extinct_merged_27March2018_caryn.csv", row.names = FALSE)
+```
+
+```{r, eval=FALSE}
+
+which(unlist(lapply(mapply(helper,extinct_tol,names(extinct_tol),SIMPLIFY = F) , length))!=4)
+
+extinct_tol[[74]] %>% filter(rank %in% c("order", "family", "genus")) %>%
+    select(-id) %>% complete(rank = c("order","family","genus"))
+## double family
+
+extinct_tol[[200]] %>% filter(rank %in% c("order", "family", "genus")) %>%
+    select(-id) %>% complete(rank = c("order","family","genus"))
+## double order
 ```
 
 ## Visualizing extinct animals
@@ -499,7 +595,8 @@ We see some clustering in Michigan, let's break that down a little bit to see wh
 
 **Note**: [*Proboscidea*](https://en.wikipedia.org/wiki/Proboscidea) is the animal order in which elephants belong. Interestingly, the only *Proboscidea* two species left on earth are in  [Elephantidae](https://en.wikipedia.org/wiki/Elephantidae) 😭🐘 
 
-```{r}
+```{r, message = F, warnings = F}
+
 extinct_merged %>%
   filter(order %in% orders_to_keep) %>%
   filter(order == "Proboscidea") %>%
@@ -551,11 +648,17 @@ The majority of the taxa is made up of Mastodon samples [*Mammut americanum*](ht
 
 ## Incorporation of More Data
 
-I wanted to see if I could make sense of the habitat of these species or climate during the Pliocene to map onto the plot, but unfortunatley I could not find mappable data. I wish I had [this papers](https://www.researchgate.net/publication/37456896_Modelling_Middle_Pliocene_warm_climates_of_the_USA) data. This is a question I had many times during these this analysis.  Does anyone know where we can get predicted ancient global temperature? 
+I wanted to see if I could make sense of the habitat of these species or climate during the Pliocene to map onto the plot, but unfortunatley I could not find mappable data. I wish I had [this paper's](https://www.researchgate.net/publication/37456896_Modelling_Middle_Pliocene_warm_climates_of_the_USA) data. This is a question I had many times during these this analysis.  Does anyone know where we can get predicted ancient global temperature? 
 
 As we explore more databases we hope to gain a better understanding of the data available and how they can be combined to provide insights into our natural world. 
 
 Stay tuned for more exploration!
+
+## Activity
+
+1. Brainstorm question(s) that you could answer using this dataset. 
+2. How would you approach you question(s)? 
+3. If you pursue your idea further, consider contributing to the [Cabinet of Curiosity](https://github.com/cabinetofcuriosity).
 
 ## Resources
 
