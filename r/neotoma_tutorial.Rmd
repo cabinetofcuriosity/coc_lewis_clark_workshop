@@ -1,6 +1,6 @@
 ---
 title: 'Exploring Neotoma'
-author: "Ciera Martinez"
+author: "Ciera Martinez and Sara Stoudt"
 date: "2018-03-20 00:00:00 +0300"
 output:
   html_document:
@@ -33,6 +33,7 @@ library(skimr)
 library(taxize)
 library(neotoma)
 library(WikipediR)
+library(maps)
 ```
 
 ## Exploring with a short example
@@ -50,7 +51,7 @@ head(smilodon)
 ```{r,message=F}
 ## BONUS CHALLENGE: I want to be tidy and use purrr, but I can't figure out why the following doesn't work:
 ## toPlot = map(smilodon, ~.x$site.data) %>% map_df( `[`, c("long","lat"))
-## Can you use `map` style function calls to get a dataframe toPlot that matches the one below?
+## Can you use `map` style function calls to get a dataframe to Plot that matches the one below?
 
 long <- unlist(lapply(smilodon, function(x) {
   x$site.data$long
@@ -105,9 +106,9 @@ head(smilodonNice)
 
 I basically want to visualize everything that the database has to offer. Of course that would mean downloading the entire database, which I shouldn’t do because it is too big. I limited my question to an aspect of the dataset I was interested in: What is the distribution of animal samples through time?
 
-My R work flow is always motivated by the question: How do I organize all the data that interests me into a data frame in the tidy format i.e. where each sample is a row.
+My R workflow is always motivated by the question: How do I organize all the data that interests me into a data frame in the tidy format i.e. where each sample is a row.
 
-The key to getting all the data I wanted was the get_data() function which allows me to download all the data for a given site. I wanted all the species information in the vertebrate fauna dataset, which is still a lot of data, but manageable.
+The key to getting all the data I wanted was the `get_data()` function, which allows me to download all the data for a given site. I wanted all the species information in the vertebrate fauna dataset, which is still a lot of data, but manageable.
 
 We will skip the part of finding all the vetebrate data in Neotoma for now, but if you are interested please see [this post on curiositydata.org](http://curiositydata.org/retrieving-summary-neotoma/).
 
@@ -117,6 +118,12 @@ Instead we will just read in the data.
 ## Read in previous data.
 all_fauna_data <- read.csv("../data/all_fauna_data.csv")
 
+```
+
+**Discussion**
+Its important to "get a feel"  for your data.  Here are a few ways to do that.  What do each of these funcyions do in plain english?
+
+```{r}
 ## Check out all the pretty data
 str(all_fauna_data)
 head(all_fauna_data)
@@ -125,7 +132,7 @@ dim(all_fauna_data)
 
 ## Visualizing
 
-What type of `taxon.groups` do I have?
+Let's visualize the question: What type of `taxon.groups` do I have?
 
 ```{r}
 ## Summarize the taxon.groups
@@ -142,10 +149,12 @@ Looks like the Fauna dataset is mostly made up of mammals anyway, so I am just g
 mammals <- all_fauna_data %>%
   filter(taxon.group == "Mammals")
 
-# How many samples do we have left?
+# Compare size to see how many samples we removed?
+dim(all_fauna_data)
 dim(mammals) 
 ```
 
+Let's visualize another question: What are the top taxa groups?
 
 ```{r}
 mammals %>% 
@@ -161,46 +170,21 @@ mammals %>%
 
 What are all these species?! With the exception of Bison bison (which is Bison or buffalo) and Homo sapiens, I really couldn't tell you. To just explore a few of the other species I just Googled.
 
-## Activity
+## Activity (5-10 min)
 
 1. Google some of these taxa to get an idea of what animals are most represented in this data.
-
-If you want to be fancy you can access Wikipedia from R. This won't work for every taxon name, but it's worth a try. 
+2. If you want to be fancy you can access Wikipedia from R. This won't work for every taxon name, but it's worth a try. 
 
 ```{r}
 wp_content <- page_content("en", "wikipedia", page_name = mammals$taxon.name[1], as_wikitext = T)
 wp_content$parse$wikitext
 
-# wp_content2 <- page_content("en","wikipedia", page_name = mammals$taxon.name[2],as_wikitext = T) ## page doesn't exist
+## This is what happens when there is no page
+wp_content2 <- page_content("en","wikipedia", page_name = mammals$taxon.name[2],as_wikitext = T) ## page doesn't exist
 
 wp_content3 <- page_content("en", "wikipedia", page_name = mammals$taxon.name[3], as_wikitext = T)
 wp_content3$parse$wikitext
 ```
-
-It would be nice if we could do this automatically for every entry in `mammals`. I wasn't able to get this to work. If you are curious why, read on.
-
-```{r,eval = F}
-#https://github.com/Ironholds/WikipediR/issues/25
-
-## I want to be able to do this
-lapply(mammals$taxon.name, function(x) {
-  page_content("en", "wikipedia", page_name = x, as_wikitext = T)
-})
-
-
-## failed attempt to get around the problem
-wiki_wrapper <- function(x) {
-  page_content("en", "wikipedia", page_name = x, as_wikitext = T)
-}
-
-mammals %>% map_df(safely(wiki_wrapper(~ .x$taxon.name), otherwise = NA_real_, quiet = T))
-```
-
-
-2. Does this make sense?  Why or why not?
-3. How many unique species are represented in this data?
-
-
 
 ## Getting to know the data even better to ask even more questions
 
@@ -241,7 +225,9 @@ ggplot() +
   ggtitle("Geographic Distribution of Homo sapien Samples")
 ```
 
-We notice that the sampling is skewed towards North America for sure! So let's zoom in on the United States.
+*Alert*: We notice that the sampling is skewed towards North America for sure! Why is this the case? More often than not, it is because of *sampling bias*, a bias in which a sample is collected in such a way that some members of the intended population are less likely to be included than others. Sometimes the bias is because of the scope of the database, which is the case here. Neotoma is a US data aggregation database.  Other times, it can because of limitations in geographic area, actually there have been some studies showing sampling occurs closest to roads! Other times, it is taxonomic bias, or "taxonomic chauvinism", which is a bias in which organisms are sampled. It is very important to know your data as best you can before making any conclusions.
+
+So let's zoom in on the United States since that is what Neotoma focuses on.
 
 ```{r}
 usa <- map_data("state") 
@@ -283,20 +269,18 @@ ggplot() +
   geom_point(data = smilodon, 
              aes(x = long, y = lat, color = taxon.name),
              alpha = .9, size = .7) +
-    scale_color_brewer(palette = "Pastel1") +
+    scale_color_brewer(palette = "Pastel1") + # I heart pastels
     theme(legend.key = element_rect(fill = "white")) +
     guides(colour = guide_legend(override.aes = list(size = 3))) +
     ggtitle("Geographic Distribution of Smilodon Samples")
 ```
 
-Ooooo Sabertooth Tigers seem to like warmer climates, that is, if North American climate during the times of these samples was anything like today's climate, which it wasn't really...
+Ooooo Sabertooth Tigers seem to like warmer climates, that is, if North American climate during the times of these samples was anything like today's climate, which it wasn't really, but maybe an hypothesis to look into?  You could even try and get climate temperature data and merge that in to go further into this hypothesis? 
 
-## Activity
+## Activity (15 minute)
 
 1. Make a map of the group you chose in the first activity. 
 2. Experiment with different inputs to `scale_color_brewer`, `theme`, and `guides` to customize your map.
-
-
 
 Now I can only go so far in exploring the data this way. The groupings of taxon is limited to species or genus, but what if I really want to see the distribution of higher order taxonomic groups. 
 This is where taxize comes in.
@@ -312,7 +296,7 @@ For us to understand how to get the most out of `taxize` for this particular dat
 The main reason we want to use this package is to group the `taxon.name` information into something more digestible - for instance higher taxonomic groups (order, class, genus). 
 
 ```{r}
-## Mammuthus is 
+## Mammuthus
 mammoth_test <- mammals[grepl("Mammuthus", mammals$taxon.name),]
 unique(mammoth_test$taxon.name) # 16 unique Mammoth taxon names
 ```
@@ -328,7 +312,7 @@ unique(mammoth_test$taxon.name) # 16 unique Mammoth taxon names
 The `taxize::classification` function works great using just the word "Mammuthus" and the Tree of Life Database.
 
 ```{r}
-classification("Mammuthus", db = 'tol')
+classification("Mammuthus", db = 'tol') 
 ```
 
 But when we use the whole list, we run into taxa name problems. Some of the `taxon.name`s from Neotoma do not work well with `taxize` data sources. See below.
@@ -362,7 +346,7 @@ clean_mammoth_test <- classification(unique(mammoth_test$taxon.name), db = 'tol'
 as.data.frame(is.na(clean_mammoth_test))
 ```
 
-Now we want to extract  `order`, `family`, and `genus` in `clean_mammoth_test` and merge `mammoth_test`.
+Now we want to extract  `order`, `family`, and `genus` in `clean_mammoth_test` and merge `mammoth_test`. Do not be intimidated if this code looks hard.  Take it one line at a time. 
 
 ```{r}
 get_phylogeny <- function(phylo_list) {
@@ -409,9 +393,9 @@ merged %>%
 
 Looks good! 
 
-**Note**: You can really do this with any subset of the Neotoma mammals dataset, but if you do it with the whole thing, it takes a long time and you need a tad more cleanup. 
+**Note**: You can really do this with any subset of the Neotoma mammals dataset, but if you do it with the whole thing, it takes a long time and you need a tad more cleanup. Take each step one at a time. 
 
-## Activity
+## Activity (10 min)
 
 1. Add taxonomic classification to the dataset you mapped in the previous activity.
 2. There is a lot of processing involved. What questions do you have about the process? Look at the documentation for functions that you aren't familiar with.
@@ -431,7 +415,7 @@ extinct_taxa <- neotoma_taxa %>%
 ## Find the intersect of extinct taxa and our mammal dataset
 extinct_species_in_mammals <- intersect(extinct_taxa$TaxonName, mammals$taxon.name)
 
-## Great! 383 of these extinct species are found in our
+## Great! over 350 of these extinct species are found in our
 ## mammal dataset.
 skim(extinct_species_in_mammals)
 ```
@@ -447,7 +431,7 @@ extinct_mammals <- mammals %>%
 nrow(extinct_mammals)
 ```
 
-3,003 bone samples in our data set come from extinct animals. Now that we have a nice subset of our species, let's go ahead and use `taxize` to merge in genus, order, and family details for each sample.
+3,0012 (number may change) bone samples in our data set come from extinct animals. Now that we have a nice subset of our species, let's go ahead and use `taxize` to merge in genus, order, and family details for each sample.
 
 ### Clean
 ```{r}
