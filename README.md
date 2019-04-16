@@ -1,31 +1,17 @@
-<div style="text-align:center"><img src ="http://curiositydata.org/assets/img/david-freeman.jpg" width="25%" height="25%"/></div>
+<div style="text-align:center"><img src ="http://curiositydata.org/assets/img/cabinetIcon-01.png" width="25%" height="25%"/></div>
 
 # Workshop 
 
 *Contirbutors: Ciera Martinez and Sara Stoudt*
 
-WEBSITE: https://iamciera.github.io/rladies_copenhagen/
+WEBSITE: https://cabinetofcuriosity.github.io/coc_lewis_clark_workshop/
 
 ## Links to tutorials
 
-[Tutorial 1: The data science of shape using `Momocs`](html/Copenhagen_Raldies_part1.html)
+- **Mybinder link (no  instalization)**: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/iamciera/binderfastest/master?urlpath=rstudio) 
+- View Only: [neotoma_tutorial_short](html/Copenhagen_Raldies_part1.html)
 
-[Tutorial 2: How to fully explore your clustering results using `ggplot` and `kohonen` ](html/Copenhagen_Raldies_part2.html)
 
-## Requirements
-
-Running Code in mybinder
--------------
-Click below
-
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/iamciera/binderfastest/master?urlpath=rstudio) 
-
-Running Code on Your Own Computer
--------------
-
-To run examples, please download all files from [Github Repository page](https://github.com/cabinetofcuriosity/coc_lewis_clark_workshop) and keep files in the same folders they were downloaded in. Open .Rmd files in Rstudio and set working directory to directory in which code was opened in `.r`. (Session > Set Working Directory > To Source File Location)
-
-**New to Github?**: There is a green button that says "clone or download", there is a "download" zip file option here.
 
 Directory Structure of Repository
 ---------------------
