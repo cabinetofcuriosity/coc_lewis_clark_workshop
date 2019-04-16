@@ -1,10 +1,9 @@
 ---
 title: 'Exploring Neotoma'
 author: "Ciera Martinez and Sara Stoudt"
-date: "2018-03-20 00:00:00 +0300"
 output:
   html_document:
-    keep_md: yes
+    keep_md: no
   pdf_document: default
 description: null
 editor_options: 
@@ -36,8 +35,7 @@ library(WikipediR)
 library(maps)
 
 ## Set working directory to source
-this.dir <- dirname(parent.frame(2)$ofile)
-setwd(this.dir)
+# setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 ```
 
 ## Exploring with a short example
@@ -129,7 +127,7 @@ What are all these species?! With the exception of Bison bison (which is Bison o
 1. Google some of these taxa to get an idea of what animals are most represented in this data.
 2. If you want to be fancy you can access Wikipedia from R. This won't work for every taxon name, but it's worth a try. 
 
-```{r}
+```{r, eval=FALSE}
 wp_content <- page_content("en", "wikipedia", page_name = mammals$taxon.name[1], as_wikitext = T)
 wp_content$parse$wikitext
 
