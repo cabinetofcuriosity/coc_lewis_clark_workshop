@@ -1,0 +1,466 @@
+---
+title: 'Exploring Neotoma'
+author: "Ciera Martinez and Sara Stoudt"
+date: "2018-03-20 00:00:00 +0300"
+output:
+  html_document:
+    keep_md: yes
+  pdf_document: default
+description: null
+editor_options: 
+  chunk_output_type: console
+---
+
+## About Neotoma
+
+Neotoma is a Paleoecological database that stores many different types of data. It focuses on data from 5.333 million years ago (Paleocene) to now. The majority of the data is from collection sites, where scientists dug into the ground, collected, and then carefully characterized the bones and fossils they found.  They included their best guess on the geological age in which they believe the organism exisited on this planet. The data ranges from diatoms to pollen to insects to bones. Bones! So cool.
+
+Neotoma is implemented in a Microsoft SQL server. You can use  Neotoma data without SQL skills using the `Neotoma` R Package which is essentially an API wrapper package which is part of my favorite R community [Ropensci](https://ropensci.org/)! This package was largely written by Simon Goring, who appears to have spear-headed this project.
+
+Note: If you are an SQL wizard, you are in luck, this database is extensive and has excellent documentation. You can read about all the details in the [Neotoma Database Manual](https://neotoma-manual.readthedocs.io/en/latest/neotoma_introduction.html).
+
+If you are working on your own machine, you must first install these packages.
+
+## Set Up
+```{r results='hide', warning=FALSE,message = F}
+# If you are working on your own machine, you must first install these packages.
+# install.packages(c("ggplot", "ggmap", "tidyverse", "skimr", "taxize", "neotoma", "WikipediR"))
+
+library(ggplot2)
+library(ggmap)
+library(tidyverse)
+library(skimr)
+library(taxize)
+library(neotoma)
+library(WikipediR)
+library(maps)
+
+## Set working directory to source
+this.dir <- dirname(parent.frame(2)$ofile)
+setwd(this.dir)
+```
+
+## Exploring with a short example
+
+The `neotoma::get_table()` function allows you to retrieve whole datasets. This is a superfast way to get to the data as a data frame. Go here for a list of all 63 the tables. These can be accessed using `get_table()` function and is a way to search through the database by specific parameters.
+
+For instance, if you are interested in a particular species, age, altitude, ect. you can use `neotoma::get_dataset`. Let’s try searching by taxonname by including just the genus. Can anyone tell me the common name of Smilodons? 
+
+```{r}
+smilodon <- get_dataset(taxonname = 'Smilodon*') 
+head(smilodon)
+```
+
+## Activity (10 min)
+
+1. What does the `*` mean in this code?
+2. What genus is your favorite animal in?
+3. Find your favorite animal or group of animals using the `get_dataset` function.
+
+## Exploring with large example
+
+I basically want to visualize everything that the database has to offer. Of course that would mean downloading the entire database, which I shouldn’t do because it is too big. I limited my question to an aspect of the dataset I was interested in: What is the distribution of animal samples through time?
+
+My R workflow is always motivated by the question: How do I organize all the data that interests me into a data frame in the tidy format i.e. where each sample is a row.
+
+The key to getting all the data I wanted was the `get_data()` function, which allows me to download all the data for a given site. I wanted all the species information in the vertebrate fauna dataset, which is still a lot of data, but manageable.
+
+We will skip the part of finding all the vetebrate data in Neotoma for now, but if you are interested please see [this post on curiositydata.org](http://curiositydata.org/retrieving-summary-neotoma/).
+
+Instead we will just read in the data. 
+
+```{r}
+## Read in previous data.
+all_fauna_data <- read.csv("../data/all_fauna_data.csv")
+```
+
+**Discussion**
+Its important to "get a feel"  for your data.  Here are a few ways to do that.  What do each of these funcyions do in plain english?
+
+```{r}
+## Check out all the pretty data
+str(all_fauna_data)
+head(all_fauna_data)
+dim(all_fauna_data) 
+```
+
+## Visualizing
+
+Let's visualize the question: What type of `taxon.groups` do I have?
+
+```{r}
+## Summarize the taxon.groups
+ggplot(all_fauna_data, aes(taxon.group)) + 
+  geom_histogram(stat = "count") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+```
+
+Looks like the Fauna dataset is mostly made up of mammals anyway, so I am just going to remove anything else to narrow my questions a bit.
+
+```{r}
+## subset only mammals
+mammals <- all_fauna_data %>%
+  filter(taxon.group == "Mammals")
+
+# Compare size to see how many samples we removed?
+dim(all_fauna_data)
+dim(mammals) 
+```
+
+Let's visualize another question: What are the top taxa groups?
+
+```{r}
+mammals %>% 
+  count(taxon.name) %>% 
+  top_n(35) %>%
+  ggplot(., aes(x = reorder(taxon.name, -n), y = n)) +
+    geom_bar(stat = "identity") +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    labs(x = "Taxon Name")
+```
+
+
+What are all these species?! With the exception of Bison bison (which is Bison or buffalo) and Homo sapiens, I really couldn't tell you. To just explore a few of the other species I just Googled.
+
+## Activity (10 min)
+
+1. Google some of these taxa to get an idea of what animals are most represented in this data.
+2. If you want to be fancy you can access Wikipedia from R. This won't work for every taxon name, but it's worth a try. 
+
+```{r}
+wp_content <- page_content("en", "wikipedia", page_name = mammals$taxon.name[1], as_wikitext = T)
+wp_content$parse$wikitext
+
+## This is what happens when there is no page
+wp_content2 <- page_content("en","wikipedia", page_name = mammals$taxon.name[2],as_wikitext = T) ## page doesn't exist
+
+wp_content3 <- page_content("en", "wikipedia", page_name = mammals$taxon.name[3], as_wikitext = T)
+wp_content3$parse$wikitext
+```
+
+## Getting to know the data even better to ask even more questions
+
+I used `str` and `head` to summarize our data, but now we want to know just a few more details about our data with a lot more style. So we are going to try out the fancy new [`skimr`](https://github.com/ropenscilabs/skimr) package....yet another Ropensci package.  
+
+Anyway, check out all the information you can get from `all_fauna_data` with `skimr`'s main function `skimr::skim`.
+
+```{r}
+skim(all_fauna_data) 
+```
+
+**Emoji Love interlude**: 😍😍😍 * 100.  This package is amazing!!! Please read about all the features on the [`skimr`](https://github.com/ropenscilabs/skimr) Github repo and [the blog post](https://ropensci.org/blog/2017/07/11/skimr/) describing the motivation and collaborative effort involved in making it. I just read it and I am bursting with love for the R community. Man. Now I just want to do a whole post on how 💣 bomb `skimr` is. 
+
+## Mapping taxon onto a map
+
+Right away I see that I have enough information to start visualizing species distributions in time. 
+
+```{r}
+# I have a love / hate relationship with this first species
+humans <- mammals %>% 
+  filter(taxon.name == "Homo sapiens" & long > -160) #ignoring samples out in the middle of the ocean
+
+# Start with world
+world <- map_data("world") 
+
+ggplot() + 
+  geom_polygon(data = world, 
+               fill = "grey38", 
+               aes(x = long, y = lat, group = group)) + 
+  coord_fixed(1.3) +
+  geom_point(data = humans, 
+             aes(x = long, 
+                 y = lat,
+                 color = age.older),
+             alpha = .7, size = .7) +
+  scale_color_continuous(guide = guide_legend(title = "Age (years ago)"))  +
+    guides(colour = guide_legend(override.aes = list(size = 3))) +
+  ggtitle("Geographic Distribution of Homo sapien Samples")
+```
+
+*Alert*: We notice that the sampling is skewed towards North America for sure! Why is this the case? More often than not, it is because of *sampling bias*, a bias in which a sample is collected in such a way that some members of the intended population are less likely to be included than others. Sometimes the bias is because of the scope of the database, which is the case here. Neotoma is a US data aggregation database.  Other times, it can because of limitations in geographic area, actually there have been some studies showing sampling occurs closest to roads! Other times, it is taxonomic bias, or "taxonomic chauvinism", which is a bias in which organisms are sampled. It is very important to know your data as best you can before making any conclusions.
+
+So let's zoom in on the United States since that is what Neotoma focuses on.
+
+```{r}
+usa <- map_data("state") 
+
+ggplot() + 
+  geom_polygon(data = usa, 
+               fill = "grey38", 
+               aes(x = long, y = lat, group = group)) + 
+  coord_fixed(1.3) +
+  geom_point(data = humans, 
+             aes(x = long, 
+                 y = lat,
+                 color = age.older),
+             alpha = .7, size = .4) +
+  guides(colour = guide_legend(override.aes = list(size = 3))) +
+   ggtitle("Geographic Distribution of Homo sapien Samples") 
+```
+
+Awesome! Looks like you can really see how the age of these samples are really skewed towards younger age samples. Which you can see clearly when you use `skimr`. 
+
+```{r}
+skim(mammals$age.older)
+skim(mammals$age.younger)
+```
+
+Let's try another another genus, like a genus of Saber Tooth Tigers, *Smilodon*.
+
+```{r}
+smilodon <- mammals[grepl("Smilodon ", mammals$taxon.name),]
+
+unique(smilodon$taxon.name) # looks like 5 unique categories.
+
+usa <- map_data("state") 
+
+ggplot() + 
+  geom_polygon(data = usa, fill = "grey30", 
+               aes(x = long, y = lat, group = group)) + 
+  coord_fixed(1.3) +
+  geom_point(data = smilodon, 
+             aes(x = long, y = lat, color = taxon.name),
+             alpha = .9, size = .7) +
+    scale_color_brewer(palette = "Pastel1") + # I heart pastels
+    theme(legend.key = element_rect(fill = "white")) +
+    guides(colour = guide_legend(override.aes = list(size = 3))) +
+    ggtitle("Geographic Distribution of Smilodon Samples")
+```
+
+Ooooo Sabertooth Tigers seem to like warmer climates, that is, if North American climate during the times of these samples was anything like today's climate, which it wasn't really, but maybe an hypothesis to look into?  You could even try and get climate temperature data and merge that in to go further into this hypothesis? 
+
+## Activity (15 minute)
+
+1. Make a map of the group you chose in the first activity. 
+2. Experiment with different inputs to `scale_color_brewer`, `theme`, and `guides` to customize your map.
+
+Now I can only go so far in exploring the data this way. The groupings of taxon is limited to species or genus, but what if I really want to see the distribution of higher order taxonomic groups. 
+This is where taxize comes in.
+
+## Adding taxonomic classifications with `taxize` 
+
+[`taxize`](https://github.com/ropensci/taxize) is such a useful package. I cannot imagine doing work on biodiversiry data without this package. There have been a lot of people who have contributed to this package, but [Scott Chamberlain](https://twitter.com/sckottie) (R wizard, Ropensci co-founder, and fellow cat lover) is the main person behind these efforts. Thanks Scott and all you other [contributors](https://github.com/ropensci/taxize/graphs/contributors)! 
+
+The `taxize` package provides a [nice tutorial](https://ropensci.org/tutorials/taxize_tutorial/) to get an overview of how to use the package. There are a lot of great functions to add meaning to any dataset with taxa/species names.  
+
+For us to understand how to get the most out of `taxize` for this particular dataset, we should mess around with a smaller subset of species.  In this case, let's grab all the species we can find from the extinct genus [Mammuthus](https://en.wikipedia.org/wiki/Mammoth) (Mammoths). 
+
+The main reason we want to use this package is to group the `taxon.name` information into something more digestible - for instance higher taxonomic groups (order, class, genus). 
+
+```{r}
+## Mammuthus
+mammoth_test <- mammals[grepl("Mammuthus", mammals$taxon.name),]
+unique(mammoth_test$taxon.name) # 16 unique Mammoth taxon names
+```
+
+**Note 1**: The key to this package is that it is the glue that unites many databases and some of these databases require you to obtain an API key to access. See full list on the [Taxize Github site](https://github.com/ropensci/taxize).
+
+**Note 2**: Omitted in this tutorial is where I basically played with many of the functions with different data sources. This package is so diverse because of the different databases it interacts with. Each database might have specific qualities for a data set.  I would play with different functions with different data sources quite a bit if you plan on using `taxize` for your own data set. We ended up using the [Open Tree of Life](https://tree.opentreeoflife.org/opentree/argus/opentree9.1@ott93302) (`tol`) database as a data source.
+
+*Note*: If you are interested in a new package that instead of using an API to a database, uses a a local database, check out [`taxadb`](https://github.com/cboettig/taxadb). It is still under development, but looks super promising.
+
+## Test of taxize with small example of Mammoth samples
+
+The `taxize::classification` function works great using just the word "Mammuthus" and the Tree of Life Database.
+
+```{r}
+classification("Mammuthus", db = 'tol') 
+```
+
+But when we use the whole list, we run into taxa name problems. Some of the `taxon.name`s from Neotoma do not work well with `taxize` data sources. See below.
+
+```{r eval = FALSE}
+## Takes a min to run
+## Does not like how my taxa.names are written
+whole_mammoth_test <- classification(unique(mammoth_test$taxon.name), db = 'tol') 
+
+## Show which species did not work
+as.data.frame(is.na(whole_mammoth_test))
+```
+
+
+*Activity*
+
+1. Find your favorite animal genus and use taxize to get all species in that genus.
+
+
+In order to get the most out of `taxize` we have to clean up the `taxon.names` so that Neotoma and Tree of Life work friendlier together. I grabbed a regex I saw from a Github gist Simon Goring wrote [gist](https://gist.github.com/SimonGoring/24fb1228204f768f3f0020f37060db18) to help with the issue of cleaning up taxon name data. See the longer version of this workshop (neotoma_tutorial_log.Rmd) or the [original post](http://curiositydata.org/exploring-neotoma-part2/) to learn more on how the data was cleaned.
+
+## Apply to larger dataset - extinct species
+
+While wondering around the Neotoma database I found out that if you use `neotoma::get_table` on the "taxa" dataset, you get a column that tells you if the animal is extinct or not. What is more interesting than extinct species? Nothing. Expecially in North America! There are Mammoths, huge armidillos, Saber Tooth Tigers, Giant Sloths and more!  
+
+Let's try to get the taxonomic classifications of all the extinct animals.
+
+First we subset by extinct taxa:
+```{r}
+neotoma_taxa <- neotoma::get_table("taxa")
+extinct_taxa <- neotoma_taxa %>% 
+  filter(Extinct == "TRUE")
+
+## Find the intersect of extinct taxa and our mammal dataset
+extinct_species_in_mammals <- intersect(extinct_taxa$TaxonName, mammals$taxon.name)
+
+## Great! over 350 of these extinct species are found in our
+## mammal dataset.
+skim(extinct_species_in_mammals)
+```
+
+Now let's subset our `mammals` dataset to include only extinct species.
+
+```{r}
+extinct_mammals <- mammals %>% 
+                      filter(taxon.name %in% extinct_species_in_mammals)
+
+## Check
+## skim(extinct_mammals) 
+nrow(extinct_mammals)
+```
+
+3,0012 (number may change) bone samples in our data set come from extinct animals. Now that we have a nice subset of our species, let's go ahead and use `taxize` to merge in genus, order, and family details for each sample. So there is a bit more cleaning steps we will omit from this workshop today for times, but please see the longer version of this workshop (neotoma_tutorial_log.Rmd) or the [original post](http://curiositydata.org/exploring-neotoma-part2/) to learn more on how the data was cleaned.
+
+
+## Visualizing extinct animals
+
+Below is the cleaned data set of all the extinct mammals bone samples found in the Neotoma database. So exciting. Let's start visualizing to 1. make sure everything is correct 2. See if there are patterns in the data to start exploring further. 
+
+```{r}
+## Read in data frame
+extinct_merged <- read.csv("../data/part2_extinct_merged_27March2018.csv")
+
+extinct_merged %>%
+  group_by(order) %>%
+  count() %>%
+    ggplot(., aes(reorder(x = order, -n), y = n)) + 
+      geom_bar(stat = "identity") +
+      theme_bw() +
+      theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+      xlab("Extinct Mammals") +
+      ylab("# of samples") +
+      ggtitle("Number of Extinct Mammal Samples in Each Animal Order")
+```
+
+There are 18 different orders of species, with the most abundant being *Cetarticodactyla* or [even-toed undulates](https://en.wikipedia.org/wiki/Even-toed_ungulate). There are also orders that are clearly not supposed to be there. I may not know animal taxonomic information very well, but for sure I know plants. *Zingerberales* is not supposed to be here!
+
+I tried using `taxize` to retrieve the common names, but in the end, I could not easily. I ended up just Googling each one and actually had wayyyyy too much fun doing it. I figured out which are animals and which are not and made a list for subsetting. It may not be programmatically reproducible, but that's okay because I learned so much. 
+
+```{r}
+orders_to_keep <- c("Rodentia", "Proboscidea", "Pilosa", "Perissodactyla", "Lagomorpha", "Didelphimorphia", "Cingulata", "Chiroptera", "Cetartiodactyla", "Carnivora", "Anguilliformes", "Primates")	
+
+extinct_merged %>% 	
+  filter(order %in% orders_to_keep) %>%	
+  group_by(order) %>%	
+  count %>%	
+  ggplot(., aes(reorder(x = order, -n), y = n)) + 
+    geom_bar(stat = "identity") +
+    theme_bw() +	
+    theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+    xlab("Extinct Mammals") +
+    ylab("# of samples") +
+  ggtitle("Number of Extinct Mammal Samples in Each Animal Order")
+```
+
+### Visualize on map
+
+So cool!
+
+```{r}
+usa <- map_data("state") 
+
+extinct_merged %>%
+  filter(order %in% orders_to_keep) %>%
+  filter(lat < 50) %>%
+    ggplot(.) + 
+      geom_polygon(data = usa, 
+              fill = "grey30", 
+              aes(x = long, y = lat, group = group)) +
+      coord_fixed(1.3) +
+      geom_point( aes(x = long, y = lat, color = order),  
+             alpha = .7, size = .5) +
+  scale_color_brewer(palette = "Set3") +
+  theme(legend.key = element_rect(fill = "white")) +
+  guides(colour = guide_legend(override.aes = list(size = 3))) +
+  ggtitle("Geographic Distribution of Extinct Mammal Samples")
+```
+
+What is going on with the Animal Order *Proboscidea*? 
+
+We see some clustering in Michigan, let's break that down a little bit to see what is going on. 
+
+**Note**: [*Proboscidea*](https://en.wikipedia.org/wiki/Proboscidea) is the animal order in which elephants belong. Interestingly, the only *Proboscidea* two species left on earth are in  [Elephantidae](https://en.wikipedia.org/wiki/Elephantidae) 😭🐘 
+
+```{r, message = F, warnings = F}
+
+extinct_merged %>%
+  filter(order %in% orders_to_keep) %>%
+  filter(order == "Proboscidea") %>%
+  filter(lat < 50) %>%
+    ggplot(.) + 
+      geom_polygon(data = usa, 
+              fill = "grey30", 
+              aes(x = long, y = lat, group = group)) +
+      coord_fixed(1.3) +
+      geom_point( aes(x = long, y = lat, color = genus ),  
+             alpha = .7, size = .6) +
+    scale_color_brewer(palette = "Pastel1") +
+    theme(legend.key = element_rect(fill = "white")) +
+    guides(colour = guide_legend(override.aes = list(size = 3))) +
+    facet_grid(family~.) +
+    ggtitle("Geographic Distribution of Proboscidea Samples")
+```
+
+Wow! This is awesome. I didn't really know anything about [Gomphothere](https://en.wikipedia.org/wiki/Gomphothere) before. This family is distinct from elephants and became extinct before Elephants and Mammoths / Mastodons, so it makes sense the scarcity of samples in the North America during these times. They were slowly replaced by modern elephants until their extinction around 10,000 years ago.
+
+```{r}
+extinct_merged %>%
+  filter(order %in% orders_to_keep) %>%
+  filter(order == "Proboscidea") %>%
+  skim(age.older)
+```
+
+That Michigan cluster of samples seems to be prodomidently from the [Mammutidae](https://en.wikipedia.org/wiki/Mammutidae) Family. 
+
+```{r}
+extinct_merged %>%
+  filter(order %in% orders_to_keep) %>%
+  filter(family == "Mammutidae") %>%
+  filter(lat < 50) %>%
+    ggplot(.) + 
+      geom_polygon(data = usa, 
+              fill = "grey30", 
+              aes(x = long, y = lat, group = group)) +
+      coord_fixed(1.3) +
+      geom_point( aes(x = long, y = lat, color = taxon.name ),  
+             alpha = .7, size = .7) +
+    scale_color_brewer(palette="Pastel1") +
+    theme(legend.key = element_rect(fill = "white")) +
+    guides(colour = guide_legend(override.aes = list(size = 3))) +
+    ggtitle("Geographic Distribution of Mammutidae Samples")
+```
+
+The majority of the taxa is made up of Mastodon samples [*Mammut americanum*](https://en.wikipedia.org/wiki/Mastodon), which apparently were the most successful North American *Proboscidea* species. 
+
+## Incorporation of More Data
+
+I wanted to see if I could make sense of the habitat of these species or climate during the Pliocene to map onto the plot, but unfortunatley I could not find mappable data. I wish I had [this paper's](https://www.researchgate.net/publication/37456896_Modelling_Middle_Pliocene_warm_climates_of_the_USA) data. This is a question I had many times during these this analysis.  Does anyone know where we can get predicted ancient global temperature? 
+
+As we explore more databases we hope to gain a better understanding of the data available and how they can be combined to provide insights into our natural world. 
+
+Stay tuned for more exploration!
+
+## Activity (rest of the time)
+
+1. Brainstorm question(s) that you could answer using this dataset. 
+2. How would you approach you question(s)? 
+3. If you pursue your idea further, consider contributing to the [Cabinet of Curiosity](https://github.com/cabinetofcuriosity).
+
+## Resources
+
+- [Neotoma R Package on Github](https://github.com/ropensci/neotoma)
+- [2017 Workshop Neotoma](https://github.com/NeotomaDB/Workshops/blob/master/IBS2017/R/Workshop_IBS2017_v0.3.pdf)
+- [Simon's Neotoma Taxize Gist](https://gist.github.com/SimonGoring/24fb1228204f768f3f0020f37060db18)
+- [Cleaning species names with Taxize tutorial](http://viktoriawagner.weebly.com/blog/cleaning-species-names-with-r-ii-taxize)
+
+
