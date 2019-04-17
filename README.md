@@ -17,7 +17,7 @@ Depending on how you want to go through the tutorial, there are a few options. O
 
 ## Talk
 
-- Link to [PDF]() of talk
+- Link to [PDF](pdf/2019_04_17_lewis_clark.pdf) of talk
 
 1. Unleashing the power of biodiversity data with data science - Ciera Martinez
 2. Why work in the Open - Sarah Stoudt
