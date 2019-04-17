@@ -1,24 +1,25 @@
 <div style="text-align:center"><img src ="http://curiositydata.org/assets/img/cabinetIcon-01.png" width="25%" height="25%"/></div>
 
-# Workshop 
+# Cabinet of Curiosity Workshop: Unleashing the power of biodiversity data with data science
+Lewis & Clark College Workshop, April 17, 2019
 
-*Contirbutors: Ciera Martinez and Sara Stoudt*
-
-WEBSITE: https://cabinetofcuriosity.github.io/coc_lewis_clark_workshop/
+*Contributors: Ciera Martinez and Sara Stoudt*
 
 ## Links to tutorials
 
 - **Mybinder link (no  instalization)**: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/iamciera/binderfastest/master?urlpath=rstudio) 
 - View Only: [neotoma_tutorial_short](html/Copenhagen_Raldies_part1.html)
 
+## References and Links
 
+- Project Website: https://curiositydata.org
+- Workshop Website: https://cabinetofcuriosity.github.io/coc_lewis_clark_workshop/
+- Workshop Github Repo: https://github.com/cabinetofcuriosity/coc_lewis_clark_workshop
 
-Directory Structure of Repository
+Directory Structure of Github Repository
 ---------------------
 
-data: Data need to run tutorials. Including output, input, and required data for further analysis after running SOMs.
-
-pdf: Knitted output PDFs from the .Rmd files.
+data: Data need to run tutorials. 
 
 html: knitted output html from .Rmd files.
 
