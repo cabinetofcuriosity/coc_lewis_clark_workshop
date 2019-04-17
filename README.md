@@ -3,9 +3,9 @@
 # Unleashing the power of biodiversity data with data science
 Lewis & Clark College Workshop, April 17, 2019
 
-*Contributors: Ciera Martinez and Sara Stoudt*
+Written By: Ciera Martinez and Sara Stoudt
 
-- Workshop Website: https://cabinetofcuriosity.github.io/coc_lewis_clark_workshop/
+Workshop Website: [https://cabinetofcuriosity.github.io/coc_lewis_clark_workshop/](https://cabinetofcuriosity.github.io/coc_lewis_clark_workshop/)
 
 ## Links to tutorials
 
@@ -15,8 +15,8 @@ Lewis & Clark College Workshop, April 17, 2019
 
 ## References and Links
 
-- Project Website: https://curiositydata.org
-- Workshop Github Repo: https://github.com/cabinetofcuriosity/coc_lewis_clark_workshop
+- Project Website: [https://curiositydata.org](https://cabinetofcuriosity.github.io/coc_lewis_clark_workshop/)
+- Workshop Github Repo: [https://github.com/cabinetofcuriosity/coc_lewis_clark_workshop](https://cabinetofcuriosity.github.io/coc_lewis_clark_workshop/)
 
 Directory Structure of Github Repository
 ---------------------
