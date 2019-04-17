@@ -8,7 +8,7 @@ Lewis & Clark College Workshop, April 17, 2019
 ## Links to tutorials
 
 - **Mybinder link (no  instalization)**: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/iamciera/binderfastest/master?urlpath=rstudio) 
-- View Only: [neotoma_tutorial_short](html/Copenhagen_Raldies_part1.html)
+- View Only: [neotoma_tutorial_short](html/neotoma_tutorial_short.html)
 
 ## References and Links
 
