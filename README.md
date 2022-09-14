@@ -1,4 +1,4 @@
-<div style="text-align:center"><img src ="https://cabinetofcuriosity.github.io/assets/img/cabinetIcon-01.png" width="25%" height="25%"/></div>
+<div style="text-align:center"><img src ="https://cabinetofcuriosity.github.io/cabinetofcuriosity_site/assets/img/david-freeman.jpg" width="25%" height="25%"/></div>
 
 # Unleashing the power of biodiversity data with data science
 Lewis & Clark College Workshop, April 17, 2019
